@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AGPF lets each dense prediction location choose its multiscale context. Explore pyramid routing, compact attention, and results across detection and segmentation.">
+  <meta property="og:title" content="AGPF: Dynamic Source Selection for Feature Pyramid Fusion">
+  <meta property="og:description" content="Let each prediction location choose its multiscale context.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="static/images/teaser.webp">
+  <meta name="theme-color" content="#ffffff">
+  <title>AGPF · Dynamic Source Selection for Feature Pyramid Fusion</title>
+  <link rel="preload" href="static/fonts/SourceSans3.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/nerfies.css">
+  <link rel="stylesheet" href="static/css/agpf.css">
+  <script src="static/page.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the research</a>
+  <header class="hero publication-header">
+    <div class="hero-body">
+      <div class="container has-text-centered">
+        <h1 class="title publication-title"><span class="method-name">AGPF</span>: Dynamic Source Selection<br class="wide-only"> for Feature Pyramid Fusion</h1>
+        <div class="publication-authors"><span class="author-block"><a href="https://scholar.google.com/citations?user=lH9x81MAAAAJ">Xu Yang</a></span><span class="author-block"><a href="https://scholar.google.com/citations?user=0wKmvY0AAAAJ">Gady Agam</a></span></div>
+        <p class="affiliation">Department of Computer Science · Illinois Institute of Technology</p>
+        <div class="publication-links">
+          <a class="button is-dark is-rounded resource" href="https://arxiv.org/pdf/2611.19836v1" target="_blank" rel="noopener">Paper <span aria-hidden="true">↗</span></a>
+          <span class="resource-status">Code release planned</span>
+        </div>
+        <nav class="section-nav" aria-label="Page sections"><a href="#insight">The finding</a><a href="#method">The method</a><a href="#results">Results</a><a href="#citation">Citation</a></nav>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero teaser" aria-label="AGPF overview">
+      <div class="container page-width">
+        <h2 class="tagline">Let each prediction location choose<br class="wide-only"> its multiscale context.</h2>
+        <figure class="teaser-figure">
+          <a href="static/images/teaser.webp" target="_blank" rel="noopener" aria-label="Open the FPN and AGPF overview at full size"><img src="static/images/teaser.webp" width="1500" height="718" alt="FPN propagates information through a shared top-down path. AGPF gives dense output queries access to a shared multilevel memory and learns attention weights for each query."></a>
+          <figcaption>A feature pyramid provides multiple scales. AGPF lets each output location retrieve from them jointly, while preserving the output grids.</figcaption>
+        </figure>
+        <div class="results-strip" aria-label="Summary of controlled COCO comparisons">
+          <div><span class="stat">19 / 19</span><span class="stat-label">detection settings improved</span></div>
+          <div><span class="stat">7 / 7</span><span class="stat-label">instance segmentation settings improved</span></div>
+          <div><span class="stat">+1.7 <span class="stat-pair">/ +2.3</span></span><span class="stat-label">box / mask AP with one fusion block</span></div>
+        </div>
+        <p class="strip-note">COCO, relative to matched FPN baselines. The single-block result uses Cascade Mask R-CNN with ResNet-50.</p>
+      </div>
+    </section>
+
+    <section class="section research-section" id="insight">
+      <div class="container page-width">
+        <div class="section-intro">
+          <h2 class="title section-title">Where does each location look?</h2>
+          <p>For each object, we sample a query at its center on every output grid and measure how AGPF distributes attention across source levels. This lets us compare objects of different sizes at the same output resolution.</p>
+        </div>
+        <div class="columns is-variable is-7 finding-columns">
+          <div class="column">
+            <h3 class="figure-title">Routing by object size</h3>
+            <div class="segmented routing-selector" role="group" aria-label="Filter AGPF routing by object size">
+              <button type="button" class="is-selected" data-routing="pooled" aria-pressed="true">All objects</button>
+              <button type="button" data-routing="small" aria-pressed="false">Small</button>
+              <button type="button" data-routing="medium" aria-pressed="false">Medium</button>
+              <button type="button" data-routing="large" aria-pressed="false">Large</button>
+            </div>
+            <figure>
+              <img id="routing-image" class="routing-chart" src="static/images/routing-pooled.svg" width="604" height="634" alt="AGPF-S routing across all objects. P2 queries assign 74.9 percent of their attention to P4.">
+              <figcaption>Each row shows how queries on one output level distribute attention across source levels, from fine (P2) to coarse (P6).</figcaption>
+            </figure>
+            <p id="routing-description" class="finding-copy" aria-live="polite">Across all objects, queries on the finest grid (P2) assign <strong>74.9%</strong> of their attention to P4, two levels coarser.</p>
+          </div>
+          <div class="column scale-evidence">
+            <h3 class="figure-title">The shift at fixed output resolution</h3>
+            <div class="segmented scale-selector" role="group" aria-label="Choose a plot of scale-dependent routing">
+              <button type="button" class="is-selected" data-scale-plot="shift" aria-pressed="true">P4 / P5 shift</button>
+              <button type="button" data-scale-plot="intervals" aria-pressed="false">P5 confidence intervals</button>
+            </div>
+            <div class="scale-charts">
+              <figure data-scale-view="shift">
+                <a href="static/images/scale-shift-p4-p5.svg" target="_blank" rel="noopener" aria-label="Open the P4 and P5 scale shift plot at full size"><img class="shift-chart" src="static/images/scale-shift-p4-p5.svg" alt="At each fixed output level, the large-minus-small attention difference is negative for P4 and positive for P5."></a>
+                <figcaption>Change in attention from small to large objects at each fixed output level, in percentage points.</figcaption>
+                <p class="finding-copy">At every output level, queries for large objects give <strong>less weight to P4 and more to P5</strong> than queries for small objects.</p>
+              </figure>
+              <figure data-scale-view="intervals" hidden>
+                <a href="static/images/scale-shift.svg" target="_blank" rel="noopener" aria-label="Open the P5 bootstrap confidence interval plot at full size"><img class="shift-chart" src="static/images/scale-shift.svg" alt="The P5 increase is 2.8 to 4.6 percentage points across fixed output levels, with all 95 percent image-bootstrap intervals above zero."></a>
+                <figcaption>Large-minus-small change in P5 attention with 95% image-bootstrap confidence intervals.</figcaption>
+                <p class="finding-copy">P5 gains <strong>2.8 to 4.6 percentage points</strong>. The confidence intervals are above zero at all five output levels.</p>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <p class="measurement-note">Default AGPF-S with pooled memory on COCO val2017. Attention is averaged over objects and heads, with 36,334 object-centered queries per output level across all sizes.</p>
+        <p class="takeaway">Locations on the same output grid can draw context from different scales.</p>
+      </div>
+    </section>
+
+    <section class="section research-section method-section" id="method">
+      <div class="container page-width">
+        <div class="section-intro">
+          <h2 class="title section-title">Dense outputs, compact context.</h2>
+          <p>AGPF expresses pyramid fusion as joint retrieval. Dense queries read from a smaller memory containing features from every level.</p>
+        </div>
+        <figure class="method-figure">
+          <a href="static/images/method.webp" target="_blank" rel="noopener" aria-label="Open the architecture and coordinate alignment diagram at full size"><img src="static/images/method.webp" alt="AGPF block with dense query and pooled key-value branches, and feature-aligned coordinates mapping fine and coarse sampling cells into a shared image coordinate system." loading="lazy"></a>
+          <figcaption>The asymmetric block preserves the multiresolution interface. Feature-aligned rotary embeddings account for both backbone stride and memory pooling.</figcaption>
+        </figure>
+        <div class="columns is-variable is-6 method-points">
+          <div class="column"><h3>Keep every output location</h3><p>The prediction grids stay dense and retain the interface expected by existing heads.</p></div>
+          <div class="column"><h3>Share a compact memory</h3><p>Pooling fine-level memory reduces the cost of joint attention across the pyramid.</p></div>
+          <div class="column"><h3>Use one spatial reference</h3><p>FA-RoPE places tokens in image coordinates so that different strides have consistent spatial meaning.</p></div>
+        </div>
+        <p class="method-note">The same block can be stacked for deeper fusion, yielding AGPF-S, AGPF-B, and AGPF-L.</p>
+      </div>
+    </section>
+
+    <section class="section research-section" id="results">
+      <div class="container page-width">
+        <div class="section-intro">
+          <h2 class="title section-title">Useful across prediction architectures.</h2>
+          <p>Replacing FPN improves every evaluated detection and instance segmentation configuration, spanning one-stage, two-stage, and cascade detectors with convolutional and Transformer backbones.</p>
+        </div>
+        <figure class="results-figure">
+          <img src="static/images/across-detectors.webp" width="1500" height="749" alt="Box AP improves in all 19 configurations and mask AP in all seven. The mean gains are approximately 1.9 box AP and 2.5 mask AP." loading="lazy">
+          <figcaption>Each point is a matched FPN-to-AGPF replacement. Dashed lines show the average gains.</figcaption>
+        </figure>
+        <h3 class="table-title">From objects to scene labeling</h3>
+        <div class="table-container">
+          <table class="table results-table is-fullwidth">
+            <caption>Representative controlled neck replacements. The remainder of each model and training recipe is held fixed.</caption>
+            <thead><tr><th>Task / dataset</th><th>Framework · backbone</th><th>Metric</th><th>FPN</th><th>AGPF</th><th>Gain</th></tr></thead>
+            <tbody>
+              <tr><td>Detection · COCO</td><td>Cascade Mask R-CNN · R50</td><td>Box AP</td><td>41.2</td><td>42.9</td><td>+1.7</td></tr>
+              <tr><td>Instance segmentation · COCO</td><td>Cascade Mask R-CNN · R50</td><td>Mask AP</td><td>36.0</td><td>38.3</td><td>+2.3</td></tr>
+              <tr><td>Semantic segmentation · ADE20K</td><td>UPerNet · R50</td><td>mIoU</td><td>40.7</td><td>43.7</td><td>+3.0</td></tr>
+              <tr><td>Semantic segmentation · Cityscapes</td><td>K-Net · Swin-L</td><td>mIoU</td><td>82.3</td><td>83.5</td><td>+1.2</td></tr>
+              <tr><td>Panoptic segmentation · COCO</td><td>Panoptic FPN · R50</td><td>PQ</td><td>42.5</td><td>46.4</td><td>+3.9</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="table-note">Detection and instance segmentation use AGPF-S in these rows. The semantic and panoptic examples use AGPF-B (R50) and AGPF-L (Swin-L).</p>
+      </div>
+    </section>
+
+    <section class="section research-section context-section" id="context">
+      <div class="container page-width">
+        <div class="section-intro">
+          <h2 class="title section-title">Local detail with a wider spatial dependence.</h2>
+          <p>Gradient-based dependency maps show which input pyramid features influence a query. AGPF retains a strong local response while extending its dependence to more distant regions.</p>
+        </div>
+        <div class="segmented example-selector" role="group" aria-label="Choose an object-size example">
+          <button type="button" data-example="small" class="is-selected" aria-pressed="true">Small object</button>
+          <button type="button" data-example="medium" aria-pressed="false">Medium object</button>
+          <button type="button" data-example="large" aria-pressed="false">Large object</button>
+        </div>
+        <div class="dependency-pair">
+          <figure><h3>FPN</h3><img id="fpn-example" src="static/images/small-fpn.webp" alt="FPN gradient dependency map for a small object in a group photograph." loading="lazy"></figure>
+          <figure><h3>AGPF-S</h3><img id="agpf-example" src="static/images/small-agpf.webp" alt="AGPF gradient dependency map for the same small-object query, showing local sensitivity and responses farther from the query." loading="lazy"></figure>
+        </div>
+        <p class="measurement-note">Paired queries use the same object and pyramid level. White boxes indicate target objects and markers indicate query locations. These are feature dependency visualizations.</p>
+      </div>
+    </section>
+
+    <section class="section closing-section" id="citation">
+      <div class="container text-width">
+        <details class="abstract-details"><summary>Read the abstract</summary><p id="paper-abstract">Feature pyramids provide dense predictors with features at several spatial resolutions. However, it remains largely unexplored which pyramid levels each output location should aggregate information from. We investigate this question by allowing each output location to attend to features from every pyramid level and measuring how attention is distributed across scales. Surprisingly, locations on the finest output grid allocate approximately 75% of their attention to features two levels coarser, rather than to the current or adjacent levels. Even on the same output grid, the balance shifts toward coarser features as object size increases. These observations motivate Asymmetric Global Pyramid Fusion (AGPF), a neck that preserves the original output grids while allowing each location to dynamically select its contextual sources across scales. Each location interacts with a multiscale memory whose features are aligned in image coordinates, enabling flexible cross-scale aggregation without altering prediction resolutions. Compared with FPN, AGPF improves all 19 object detection and all seven instance segmentation configurations evaluated on COCO. A single fusion block improves Cascade Mask R-CNN by 1.7 box AP and 2.3 mask AP, and the gains consistently transfer to semantic and panoptic segmentation.</p></details>
+        <div class="citation-heading"><h2 class="title section-title">Citation</h2><button class="copy-button" type="button" id="copy-citation">Copy BibTeX</button></div>
+        <pre><code id="bibtex">@misc{yang2026agpfdynamicsourceselection,
+      title={AGPF: Dynamic Source Selection for Feature Pyramid Fusion},
+      author={Xu Yang and Gady Agam},
+      year={2026},
+      eprint={2611.19836},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2611.19836},
+}</code></pre>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><div class="container text-width"><p>Questions? <a href="mailto:xyang99@hawk.illinoistech.edu">Contact Xu Yang</a>.</p><p>Website adapted from <a href="https://nerfies.github.io/" target="_blank" rel="noopener">Nerfies</a>, under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</p></div></footer>
+</body>
+</html>
